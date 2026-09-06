@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use PeakST, please cite this software."
+title: "PeakST: Peak-Sensitive Transfer of Particle Number Size Distributions"
+type: software
+version: 0.1.0
+date-released: 2026-09-06
+url: "https://github.com/bubaizhanshen/PeakST"
+repository-code: "https://github.com/bubaizhanshen/PeakST"
+license: MIT
+authors:
+  - family-names: Cao
+    given-names: Rongkai
+  - family-names: Lin
+    given-names: Xiuxiu
+  - family-names: Wang
+    given-names: Minghan
+  - family-names: Zhang
+    given-names: Xun
+  - family-names: Yao
+    given-names: Na
+  - family-names: Liu
+    given-names: Xiansheng
