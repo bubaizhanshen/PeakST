@@ -1,11 +1,12 @@
 # PeakST
 
-PeakST is a reproducible implementation of peak-sensitive cross-site transfer
+PeakST is a paper-aligned reference implementation of peak-sensitive cross-site transfer
 for particle number size distributions (PNSDs). It learns an ordinary
 full-spectrum predictor and a high-concentration predictor, then uses a
 source-trained hourly score to allocate the correction at small particle
-diameters. The repository also provides the preprocessing audits and endpoint
-definitions used in the accompanying study.
+diameters. The repository also provides preprocessing audits, reference-only
+selection utilities, site-first aggregation, and endpoint definitions used in
+the accompanying study.
 
 This repository contains code only. Measurement data, trained weights,
 predictions, manuscript files, and study figures are not distributed.
@@ -60,8 +61,8 @@ input path. Output directories are user-selected and ignored by Git.
 
 ## Repository layout
 
-- `src/peakst/`: representation checks, model components, transfer operations,
-  and evaluation metrics
+- `src/peakst/`: representation checks, MLP and TabM backbones, transfer
+  operations, blocked reference-period selection, aggregation, and metrics
 - `scripts/`: command-line entry points
 - `configs/`: a documented example configuration without site-specific paths
 - `tests/`: synthetic unit tests; no measurement records
@@ -78,6 +79,11 @@ The software enforces three rules used in the study:
 The 64 output cells are a common numerical representation, not 64 independent
 instrument channels. The numerical return above 25 nm is an output
 construction rather than an atmospheric constraint.
+
+The repository can reproduce the analysis logic with provider-authorized
+inputs. Exact manuscript estimates additionally require the original records,
+site-specific eligibility masks, and frozen experiment configurations; none of
+these restricted data products is distributed here.
 
 ## Citation
 

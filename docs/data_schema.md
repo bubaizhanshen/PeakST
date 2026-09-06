@@ -8,7 +8,7 @@ must be strictly ordered within each split.
 
 | Key | Shape | Meaning |
 |---|---:|---|
-| `source_x` | `(n_source, p)` | Source routine, meteorological, and calendar predictors |
+| `source_x` | `(n_source, p)` | Source routine, meteorological, and calendar predictors in one common schema |
 | `source_y` | `(n_source, 64)` | Source integrated number concentration per common cell, particles cm-3 |
 | `source_site` | `(n_source,)` | Source site identifier used for equal-site weighting |
 | `source_year` | `(n_source,)` | Source year used to define within-site-year high states |
@@ -23,6 +23,10 @@ must be strictly ordered within each split.
 `reference_time.max()` must be earlier than `test_time.min()`. The software
 rejects archives that violate this condition. PNC, CPC, PNSD, event labels,
 and target-derived thresholds must not appear among query-period predictors.
+The common predictor schema may contain site- or year-specific missing values;
+the fitted transform appends missingness indicators after median imputation.
+Users should document systematically absent variables and repeat the analysis
+with a stable predictor subset when missingness could identify a site.
 
 ## Native-spectrum mapping archive
 

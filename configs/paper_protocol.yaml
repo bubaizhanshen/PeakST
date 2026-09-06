@@ -1,0 +1,21 @@
+# Path-free record of the principal experimental protocol. Site-specific
+# eligibility masks and provider data are intentionally not distributed.
+random_seeds: [20260905, 20260906, 20260907]
+development_sites: 4
+reference:
+  budgets_days: [7, 30]
+  eligible_pool_days: 60
+  minimum_valid_hours_per_day: 12
+  blocked_selection_folds: 3
+evaluation:
+  later_test_days: 30
+  upper_quantile: 0.90
+  aggregation: origins_within_site_then_sites_within_seed_then_seeds
+model_families: [mlp, tabm]
+output_cells:
+  total: 64
+  small_15_25_nm: 11
+  transition_25_41p67_nm: 8
+selection:
+  fixed_allocation_grid: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  maximum_full_spectrum_cost_fraction: 0.01

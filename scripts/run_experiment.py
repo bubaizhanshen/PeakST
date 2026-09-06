@@ -25,11 +25,19 @@ def main() -> None:
     config = yaml.safe_load(args.config.read_text())
     seed = int(args.seed or config["random_seeds"][0])
     predictions = run_peakst(data, config, seed, args.device)
+    reference_threshold = float(
+        __import__("numpy").quantile(
+            data["reference_y"][:, :11].sum(axis=1),
+            float(config["evaluation"]["upper_quantile"]),
+        )
+    )
     ordinary_metrics = evaluate_spectrum(
-        data["test_y"], predictions["ordinary_adaptation"]
+        data["test_y"], predictions["ordinary_adaptation"],
+        test_time=data["test_time"], reference_threshold=reference_threshold,
     )
     peakst_metrics = evaluate_spectrum(
-        data["test_y"], predictions["PeakST_tapered"]
+        data["test_y"], predictions["PeakST_tapered"],
+        test_time=data["test_time"], reference_threshold=reference_threshold,
     )
     report = {
         "status": "completed",

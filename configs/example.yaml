@@ -25,6 +25,8 @@ model:
   hidden_width: 256
   dropout: 0.1
   source_epochs: 40
+  ordinary_source_epochs: 40
+  peak_source_epochs: 40
   target_epochs: 15
   learning_rate: 0.002
   target_learning_rate: 0.001

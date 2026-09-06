@@ -1,4 +1,11 @@
-"""Minimal end-to-end PeakST training pipeline for local experiment archives."""
+"""Paper-aligned PeakST training operations for local experiment archives.
+
+The public entry point executes one already chosen model configuration.  The
+paper's source-side validation, blocked target-reference selection, and
+multi-site aggregation are implemented separately in :mod:`peakst.selection`
+and :mod:`peakst.reporting` so that the later test labels cannot enter model
+choice.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -76,6 +83,25 @@ def site_equal_weights(site: np.ndarray) -> np.ndarray:
     return result
 
 
+def site_and_class_equal_weights(
+    site: np.ndarray, labels: np.ndarray
+) -> np.ndarray:
+    """Give sites equal total weight and classes equal weight within the pool."""
+
+    site = np.asarray(site)
+    labels = np.asarray(labels, dtype=bool)
+    result = np.zeros(len(site), dtype=float)
+    sites = np.unique(site)
+    for site_value in sites:
+        for class_value in (False, True):
+            selected = (site == site_value) & (labels == class_value)
+            count = int(selected.sum())
+            if count == 0:
+                raise ValueError("each source site must contain both high-state classes")
+            result[selected] = len(site) / (len(sites) * 2.0 * count)
+    return result.astype("float32")
+
+
 def grouped_high_state(
     small_concentration: np.ndarray,
     site: np.ndarray,
@@ -93,13 +119,51 @@ def grouped_high_state(
 
 def make_model(n_inputs: int, config: dict, seed: int, device: torch.device):
     torch.manual_seed(seed)
-    model = MLP(
-        n_inputs=n_inputs,
-        n_outputs=64,
-        blocks=int(config["hidden_blocks"]),
-        width=int(config["hidden_width"]),
-        dropout=float(config["dropout"]),
-    )
+    backbone = str(config.get("backbone", "mlp")).lower()
+    if backbone == "mlp":
+        model = MLP(
+            n_inputs=n_inputs,
+            n_outputs=64,
+            blocks=int(config["hidden_blocks"]),
+            width=int(config["hidden_width"]),
+            dropout=float(config["dropout"]),
+        )
+    elif backbone == "tabm":
+        try:
+            from tabm import TabM
+            import rtdl_num_embeddings as embeddings
+        except ImportError as error:
+            raise ImportError(
+                "TabM requires `python -m pip install -e '.[tabm]'`"
+            ) from error
+        embedding_name = str(config.get("embedding", "periodic"))
+        if embedding_name == "periodic":
+            embedding = embeddings.PeriodicEmbeddings(
+                n_inputs,
+                d_embedding=int(config.get("embedding_width", 16)),
+                n_frequencies=int(config.get("embedding_frequencies", 16)),
+                frequency_init_scale=float(config.get("frequency_scale", 0.1)),
+                lite=False,
+            )
+        elif embedding_name == "linear_relu":
+            embedding = embeddings.LinearReLUEmbeddings(
+                n_inputs, d_embedding=int(config.get("embedding_width", 16))
+            )
+        elif embedding_name == "none":
+            embedding = None
+        else:
+            raise ValueError(f"unsupported TabM embedding: {embedding_name}")
+        model = TabM.make(
+            n_num_features=n_inputs,
+            d_out=64,
+            num_embeddings=embedding,
+            n_blocks=int(config["hidden_blocks"]),
+            d_block=int(config["hidden_width"]),
+            dropout=float(config["dropout"]),
+            k=int(config.get("ensemble_members", 32)),
+        )
+    else:
+        raise ValueError(f"unsupported backbone: {backbone}")
     return model.to(device)
 
 
@@ -183,7 +247,6 @@ def run_peakst(data: dict[str, np.ndarray], config: dict, seed: int, device: str
         features=source_x,
         target=source_target,
         sample_weight=weights,
-        epochs=int(model_config["source_epochs"]),
         learning_rate=float(model_config["learning_rate"]),
         weight_decay=float(model_config["weight_decay"]),
         batch_size=int(model_config["batch_size"]),
@@ -194,12 +257,22 @@ def run_peakst(data: dict[str, np.ndarray], config: dict, seed: int, device: str
         ordinary,
         high_state=np.zeros(len(source_x), dtype=bool),
         additional_small_weight=0.0,
+        epochs=int(
+            model_config.get(
+                "ordinary_source_epochs", model_config.get("source_epochs", 40)
+            )
+        ),
         **fit_arguments,
     )
     fit_model(
         peak,
         high_state=source_high,
         additional_small_weight=float(peak_config["additional_small_cell_loss"]),
+        epochs=int(
+            model_config.get(
+                "peak_source_epochs", model_config.get("source_epochs", 40)
+            )
+        ),
         **fit_arguments,
     )
 
@@ -241,7 +314,13 @@ def run_peakst(data: dict[str, np.ndarray], config: dict, seed: int, device: str
         early_stopping=False,
         random_state=seed,
     )
-    gate.fit(data["source_x"], source_high, sample_weight=weights)
+    gate.fit(
+        data["source_x"],
+        source_high,
+        sample_weight=site_and_class_equal_weights(
+            data["source_site"], source_high
+        ),
+    )
     score = gate.predict_proba(data["test_x"])[:, 1]
     general = np.expm1(np.clip(predict(ordinary, test_x, device_object) * scale + mean, 0, 20))
     specialist = np.expm1(np.clip(predict(peak, test_x, device_object) * scale + mean, 0, 20))
