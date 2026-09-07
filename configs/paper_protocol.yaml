@@ -12,6 +12,40 @@ evaluation:
   upper_quantile: 0.90
   aggregation: origins_within_site_then_sites_within_seed_then_seeds
 model_families: [mlp, tabm]
+predictors:
+  order: [hour_sin, hour_cos, doy_sin, doy_cos, dow_sin, dow_cos, weekend,
+          TEMP, RH, PRESS, log_RAD, log_WS, wind_sin, wind_cos, log_RAIN,
+          log_PM10, log_PM25, log_NO, log_NO2, log_O3, log_CO]
+  log1p_before_archive: [RAD, WS, RAIN, PM10, PM25, NO, NO2, O3, CO]
+  source_imputation_and_scaling: true
+  standardized_clip: [-20.0, 20.0]
+ordinary_source_selection:
+  mlp:
+    hidden_blocks: 3
+    hidden_width: {ATH: 256, BCN: 256, BUD: 256, HEK: 256, BIR: 512}
+    epochs: {ATH: 7, BCN: 7, BUD: 6, HEK: 12, BIR: 3}
+    dropout: 0.1
+  tabm:
+    ensemble_members: 32
+    hidden_blocks: 2
+    hidden_width: 256
+    embedding: {ATH: periodic, BCN: linear_relu, BUD: periodic,
+                HEK: linear_relu, BIR: linear_relu}
+    epochs: {ATH: 20, BCN: 58, BUD: 38, HEK: 57, BIR: 32}
+    dropout: 0.1
+  optimizer:
+    name: AdamW
+    learning_rate: 0.002
+    weight_decay: 0.0003
+    batch_size: 512
+peak_source:
+  candidate_epochs: [40, 80, 160]
+  selected_mlp_epochs: {ATH: 40, BCN: 40, BUD: 40, HEK: 40}
+  selected_tabm_epochs: {ATH: 40, BCN: 40, BUD: 160, HEK: 40}
+target_adaptation:
+  candidate_learning_rates: [0.0001, 0.001, 0.003]
+  candidate_epochs: [5, 15, 40, 80, 160]
+  batch_size: 256
 output_cells:
   total: 64
   small_15_25_nm: 11
