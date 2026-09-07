@@ -20,6 +20,19 @@ must be strictly ordered within each split.
 | `test_time` | `(n_test,)` | Later test timestamps |
 | `edges_nm` | `(65,)` | Strictly increasing common-cell edges |
 
+The paper-aligned 21-column predictor order is `hour_sin`, `hour_cos`,
+`doy_sin`, `doy_cos`, `dow_sin`, `dow_cos`, `weekend`, `TEMP`, `RH`,
+`PRESS`, `log_RAD`, `log_WS`, `wind_sin`, `wind_cos`, `log_RAIN`,
+`log_PM10`, `log_PM25`, `log_NO`, `log_NO2`, `log_O3`, and `log_CO`.
+Names beginning with `log_` contain `ln(1 + x)` values computed before the
+archive is written; temperature, relative humidity, and pressure remain on
+their original linear scales. Cyclic variables and the weekend indicator are
+also computed before archiving. The public transform then fits source-only
+medians, means, and standard deviations, appends one binary missingness
+indicator per predictor, and bounds standardized continuous values to
+`[-20, 20]`. Source-derived transformations are reused unchanged for the
+target-reference and test arrays.
+
 `reference_time.max()` must be earlier than `test_time.min()`. The software
 rejects archives that violate this condition. PNC, CPC, PNSD, event labels,
 and target-derived thresholds must not appear among query-period predictors.

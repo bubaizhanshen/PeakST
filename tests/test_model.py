@@ -7,6 +7,7 @@ from peakst.model import (
     blend_small_cells,
     boundary_continuous_return,
 )
+from peakst.metrics import evaluate_spectrum
 from peakst.reporting import equal_site_equal_seed_summary
 from peakst.selection import (
     blocked_reference_folds,
@@ -104,3 +105,13 @@ def test_site_first_summary_does_not_pool_origins():
     )
     result = equal_site_equal_seed_summary(rows)
     assert result.loc[0, "error"] == 0.5
+
+
+def test_reported_raw_and_composition_metrics():
+    observed = np.tile(np.arange(1.0, 65.0), (20, 1))
+    predicted = observed.copy()
+    result = evaluate_spectrum(observed, predicted)
+    assert result["small_upper_mae_raw"] == 0.0
+    assert result["composition_tv"] == 0.0
+    assert result["small_upper_precision"] == 1.0
+    assert result["small_upper_recall"] == 1.0

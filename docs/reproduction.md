@@ -28,3 +28,13 @@ paper analysis requires looping over source-validation candidates, target
 sites, eligible temporal origins, reference-day budgets, and all reported
 seeds. `peakst.selection` contains the blocked-fold and reference-only control
 rules; `peakst.reporting` implements the manuscript aggregation order.
+
+The public command reports full-spectrum log-MAE, small-band log- and raw-scale
+upper-tail MAE, spectral-composition total variation, upper-tail concentration
+ratio, test- and reference-threshold detection metrics, and daily-maximum
+log-MAE. For TabM, training averages squared losses over ensemble members;
+prediction averages member outputs before inverse standardization and
+back-transformation. `choose_reference_controls` deliberately accepts OOF
+predictions rather than constructing them: callers must train each fold model
+without the corresponding validation hours, then pass the concatenated OOF
+predictions to that function.

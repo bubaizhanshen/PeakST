@@ -25,6 +25,16 @@ def evaluate_spectrum(
     threshold = float(np.quantile(observed_small, upper_quantile))
     high = observed_small >= threshold
     predicted_high = predicted_small >= threshold
+    observed_total = observed.sum(axis=1, keepdims=True)
+    predicted_total = predicted.sum(axis=1, keepdims=True)
+    observed_fraction = np.divide(
+        observed, observed_total, out=np.zeros_like(observed),
+        where=observed_total > 0,
+    )
+    predicted_fraction = np.divide(
+        predicted, predicted_total, out=np.zeros_like(predicted),
+        where=predicted_total > 0,
+    )
     false_positive = np.sum(~high & predicted_high)
     true_negative = np.sum(~high & ~predicted_high)
     true_positive = np.sum(high & predicted_high)
@@ -41,6 +51,12 @@ def evaluate_spectrum(
             np.abs(
                 np.log1p(predicted_small[high]) - np.log1p(observed_small[high])
             ).mean()
+        ),
+        "small_upper_mae_raw": float(
+            np.abs(predicted_small[high] - observed_small[high]).mean()
+        ),
+        "composition_tv": float(
+            0.5 * np.abs(predicted_fraction - observed_fraction).sum(axis=1).mean()
         ),
         "small_upper_mean_ratio": float(
             predicted_small[high].mean() / observed_small[high].mean()
